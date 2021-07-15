@@ -18,6 +18,10 @@
 --
 -- Dumping data for table `cities`
 --
+CREATE DATABASE data_warehouse;
+
+use data_warehouse;
+
 
 LOCK TABLES `cities` WRITE;
 /*!40000 ALTER TABLE `cities` DISABLE KEYS */;

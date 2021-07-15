@@ -2,11 +2,13 @@ const pool = require('../database');
 const helper = require('../lib/helpers');
 
 const addOneCompany = async (req, res) => {
-    const {name, city_id, address, email, phone} = req.body;
+    const {name, fk_city_id, fk_country_id, fk_region_id, address, email, phone} = req.body;
     //Deberia hacer una busqueda para ver si ya existe
     const newCompany = {
         name, 
-        city_id,
+        fk_city_id,
+        fk_country_id,
+        fk_region_id,
         address,
         email,
         phone
@@ -30,13 +32,15 @@ const modifyOneCompany = async (req, res) => {
         console.log(companiesList, id);
         if(helper.findCompanyById(companiesList, id)){
             console.log('the company you wanna update is in list');
-            const {name, city_id, address, email, phone} = req.body;
+            const {name, fk_city_id, fk_country_id, fk_region_id, address, email, phone} = req.body;
             const rows = await pool.query('SELECT * FROM companies WHERE id = ?', [id]);
             const currentCompany = rows[0];
             const modifiedCompany = {
                 ...currentCompany,
                 name,
-                city_id,
+                fk_city_id,
+                fk_country_id,
+                fk_region_id,
                 address,
                 email,
                 phone
@@ -134,9 +138,39 @@ const activeCompany = async (req, res) => {
 
 const getAllCompanies = async (req, res) => {
     const companies = await pool.query('SELECT * FROM companies');
+    let companyModified ={}
+    let companiesModified =[];
+    for (const company of companies){
+        console.log(company.active);
+        if(company.active === 1) {
+            const cityCompany = await pool.query('SELECT * FROM cities WHERE city_id = ?', [company.fk_city_id]);
+            // console.log(cityCompany[0].city_name);
+            const countryCompany = await pool.query('SELECT * FROM countries WHERE country_id = ?', [cityCompany[0].fk_country_id])
+            // console.log(countryCompany[0].country_name);
+            const regionCompany = await pool.query('SELECT * FROM regions WHERE region_id = ?', [countryCompany[0].fk_region_id])
+            // console.log(regionCompany[0].region_name);
+            companyModified = {
+                key: company.id,
+                id: company.id,
+                name: company.name,
+                address: company.address,
+                email: company.email,
+                phone: company.phone,
+                region_name: regionCompany[0].region_name,
+                country_name: countryCompany[0].country_name,
+                city_name: cityCompany[0].city_name,
+                fk_region_id: company.fk_region_id,
+                fk_country_id: company.fk_country_id,
+                fk_city_id: company.fk_city_id,
+            }
+            // console.log(companyModified);
+            companiesModified.push(companyModified)
+        }
+    }
+    console.log(companiesModified);
     console.log(companies);
     res.json(
-        companies
+        companiesModified
     )
 }
 

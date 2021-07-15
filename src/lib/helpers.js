@@ -93,15 +93,17 @@ helper.findCoincidenceInUserListBodySRC = (list, id) => {
 
 helper.findCountryById = (list, id) => {
     const itemId = parseInt(id);
-    console.log(list);
+    // console.log("hola entre aca");
+    // console.log(id);
+    // console.log(list);
     let match = false;
     list.forEach(item => {
-        if(item.id === itemId) {
+        if(item.country_id === itemId) {
             match = true;
             return match;
         }
     });
-    console.log(match);
+    // console.log(match);
     return match;
 }
 
@@ -111,7 +113,21 @@ helper.findCityById = (list, id) => {
     console.log(list);
     let match = false;
     list.forEach(item => {
-        if(item.id === itemId) {
+        if(item.city_id === itemId) {
+            match = true;
+            return match;
+        }
+    });
+    console.log(match);
+    return match;
+}
+
+helper.findRegionById = (list, id) => {
+    const itemId = parseInt(id);
+    console.log(list);
+    let match = false;
+    list.forEach(item => {
+        if(item.region_id === itemId) {
             match = true;
             return match;
         }
@@ -149,6 +165,19 @@ helper.findContactById = (list, id) => {
     return match;
 }
 
+helper.findChannelById = (list, id) => {
+    const itemId = parseInt(id);
+    console.log(list);
+    let match = false;
+    list.forEach(item => {
+        if(item.id === itemId) {
+            match = true;
+            return match;
+        }
+    });
+    console.log(match);
+    return match;
+}
 
 module.exports = helper;
 

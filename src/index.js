@@ -21,6 +21,7 @@ app.use('/users', require('./routes/users'));
 app.use('/regions', require('./routes/regions'));
 app.use('/companies', require('./routes/companies'));
 app.use('/contacts', require('./routes/contacts'));
+app.use('/contactChannels', require('./routes/contactChannels'));
 //Public
 
 //Starting server

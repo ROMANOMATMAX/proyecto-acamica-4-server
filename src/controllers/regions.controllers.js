@@ -18,16 +18,16 @@ const addOneRegion = async (req, res) => {
 }
 
 const addOneCountry = async (req, res) => {
-    const {country_name, region_id} = req.body;
+    const {country_name, fk_region_id} = req.body;
 
     const newCountry = {
         country_name,
-        region_id
+        fk_region_id
     }
     try {
         await pool.query('INSERT INTO countries set ?', [newCountry])
         res.status(200).json({
-            message: `You have added a new Country to region ${region_id}`
+            message: `You have added a new Country to region ${fk_region_id}`
         })
     }catch(err) {
         res.status(500).json({err})
@@ -36,16 +36,16 @@ const addOneCountry = async (req, res) => {
 
 
 const addOneCity = async (req, res) => {
-    const {city_name, country_id} = req.body;
+    const {city_name, fk_country_id} = req.body;
 
     const newCity = {
         city_name,
-        country_id
+        fk_country_id
     }
     try {
         await pool.query('INSERT INTO cities set ?', [newCity])
         res.status(200).json({
-            message: `You have added a new city to ${country_id}`
+            message: `You have added a new city to ${fk_country_id}`
         })
     }catch(err) {
         res.status(500).json({err})
@@ -62,13 +62,13 @@ const modifyCountry = async (req, res) => {
         if(helper.findCountryById(countriesList, id)){
             console.log('the country you wanna update is in list');
             const{country_name} = req.body;
-            const rows = await pool.query('SELECT * FROM countries WHERE id = ?', [id]);
+            const rows = await pool.query('SELECT * FROM countries WHERE country_id = ?', [id]);
             const currentCountry = rows[0];
             const modifiedCountry = {
                 ...currentCountry,
                 country_name
             }
-            await pool.query('UPDATE countries set ? WHERE id = ?', [modifiedCountry, id])
+            await pool.query('UPDATE countries set ? WHERE country_id = ?', [modifiedCountry, id])
             res.status(200).json({
                 message: 'You have modified a country successfully'
             })
@@ -92,7 +92,7 @@ const desactiveCountry = async (req, res) => {
         const countriesList = await pool.query('SELECT * FROM countries');
         console.log(countriesList, id);
         if(helper.findCountryById(countriesList, id)){
-            const rows = await pool.query('SELECT * FROM countries WHERE id = ?', [id]);
+            const rows = await pool.query('SELECT * FROM countries WHERE country_id = ?', [id]);
             const currentCountry = rows[0];
             if(currentCountry.active === 1){
                 const modifiedCountry = {
@@ -100,7 +100,7 @@ const desactiveCountry = async (req, res) => {
                     active: 0
                 }
                 console.log(modifiedCountry);
-                await pool.query('UPDATE countries set ? WHERE id = ?', [modifiedCountry, id]);
+                await pool.query('UPDATE countries set ? WHERE country_id = ?', [modifiedCountry, id]);
                 res.status(200).json({
                     message: 'You have desactived a country successfully'
                 })
@@ -170,13 +170,13 @@ const modifyCity = async (req, res) => {
         if(helper.findCityById(citiesList, id)){
             console.log('the city you wanna update is in list');
             const{city_name} = req.body;
-            const rows = await pool.query('SELECT * FROM cities WHERE id = ?', [id]);
+            const rows = await pool.query('SELECT * FROM cities WHERE city_id = ?', [id]);
             const currentCity = rows[0];
             const modifiedCity = {
                 ...currentCity,
                 city_name
             }
-            await pool.query('UPDATE cities set ? WHERE id = ?', [modifiedCity, id])
+            await pool.query('UPDATE cities set ? WHERE city_id = ?', [modifiedCity, id])
             res.status(200).json({
                 message: 'You have modified a city successfully'
             })
@@ -200,14 +200,14 @@ const desactiveCity = async (req, res) => {
         const citiesList = await pool.query('SELECT * FROM cities');
         console.log(citiesList, id);
         if(helper.findCityById(citiesList, id)){
-            const rows = await pool.query('SELECT * FROM cities WHERE id = ?', [id]);
+            const rows = await pool.query('SELECT * FROM cities WHERE city_id = ?', [id]);
             const currentCity = rows[0];
             if(currentCity.active === 1){
                 const modifiedCity = {
                     ...currentCity,
                     active: 0
                 }
-                await pool.query('UPDATE cities set ? WHERE id = ?', [modifiedCity, id]);
+                await pool.query('UPDATE cities set ? WHERE city_id = ?', [modifiedCity, id]);
                 res.status(200).json({
                     message: 'You have desactived a city successfully'
                 })
@@ -276,88 +276,175 @@ const getAllRegions = async (req, res) => {
 
 const getCountriesByRegion = async (req, res) => {
     const {region_id} = req.params;
-    const countriesOfRegion = await pool.query('SELECT * FROM countries WHERE region_id = ?', [region_id]);
+    const countriesOfRegion = await pool.query('SELECT * FROM countries WHERE fk_region_id = ?', [region_id]);
     res.json(countriesOfRegion)
 }
 
 const getCitiesByCountry = async (req, res) => {
     const {country_id} = req.params;
-    const citiesOfCountry = await pool.query('SELECT * FROM cities WHERE country_id = ?', [country_id]);
+    const citiesOfCountry = await pool.query('SELECT * FROM cities WHERE fk_country_id = ?', [country_id]);
     res.json(citiesOfCountry)
 }
 
 const getAllInformation = async (req, res) => {
-    const id = 50;
+    console.log("hola entre a allInformation");
     let arrayMaestro = []; //Es el que almacena los objetos maestros
     const allRegions = await pool.query('SELECT * FROM regions');//traigo todas las regiones existentes en DB
+    console.log("294", allRegions.length);
     for(let i=0; i<allRegions.length; i++ ) { //Por cada region haré una consulta para saner que paises tiene
         let children = [];
         let region= '';
+        let id= 0;
         let key = `0-${i}`;
         let objetoMaestro = {
             title: region,
+            id: id,
             key,
             children,
         };//Vamos a ir creando un super objeto que contiene todo lo relacionado a una region y los paises que la componen
         objetoMaestro.title = allRegions[i].region_name;
+        objetoMaestro.id = allRegions[i].region_id;
         let allInformation = []
-        //Consultamos por los datos de paises y ciudades asociados a esta region
-        allInformation = await pool.query('SELECT r.region_name, c.country_name, ct.city_name FROM cities ct INNER JOIN countries c ON ct.country_id = c.id INNER JOIN regions r ON r.id = c.region_id WHERE r.id = ?;', [allRegions[i].id]);
-        let uniqueCountries = [];
-        //Vamos a filtrar los paises que pertenecen a esta region-como pueden estar repetidos se hace esto
-        allInformation.forEach(item => {
-            if(!uniqueCountries.includes(item.country_name)) {
-                uniqueCountries.push(item.country_name);
-                console.log("No estaba en la lista",uniqueCountries);
-            }
-        })
+        allCountriesOfRegion = await pool.query('SELECT country_name, country_id FROM countries WHERE fk_region_id = ? AND active = 1', [allRegions[i].region_id])//Tengo todos los paises de la region que esta iterando
         let ciudades = [];
-        for(let i= 0; i< uniqueCountries.length; i++) {
-            const item = uniqueCountries[i];
+        for(let i= 0; i< allCountriesOfRegion.length; i++) {
+            const item = allCountriesOfRegion[i];
+            // console.log("319", item.country_id);
             let children =[];
             objetoMaestro.children.push({
-                title: item,
+                id: item.country_id,
+                title: item.country_name,
                 key: `${key}-${i}`,
                 children,
             })
         }
-        // uniqueCountries.forEach(item => {
-        //     let children =[];
-        //     objetoMaestro.children.push({
-        //         title: item,
-        //         key:
-        //         item,
-        //         children,
-        //     })
-        // })
-        console.log(objetoMaestro);
-        let uniqueCities = [];
-        for(let i= 0; i<uniqueCountries.length; i++){
-            uniqueCities = [];
-            const countryItem = uniqueCountries[i];
-            allInformation.forEach(item => {
-                if(item.country_name === countryItem) {
-                    uniqueCities.push(item.city_name);
-                }
-            })
-            console.log(`${i}`,uniqueCities);
-            for(let j= 0; j< uniqueCities.length; j++){
+        for(let i= 0; i<allCountriesOfRegion.length; i++){
+            // uniqueCities = [];
+            const countryItem = allCountriesOfRegion[i];//Tengo uno de los paises de la lista uniques
+            const citiesOfCountry = await pool.query('SELECT city_name, city_id FROM cities WHERE fk_country_id = ? AND active = 1', [countryItem.country_id])
+            for(let j= 0; j< citiesOfCountry.length; j++){
                 objetoMaestro.children[i].children.push({
-                    title: uniqueCities[j],
+                    id: citiesOfCountry[j].city_id,
+                    title: citiesOfCountry[j].city_name,
                     key: `${key}-${i}-${j}`
                 })
             }
         }
-        console.log(objetoMaestro);
-        // console.log(objetoMaestro.paises[0].ciudades);
-        //Tengo todos los paises unicos en el array uniqueCountries
         arrayMaestro.push(objetoMaestro);
-        console.log(arrayMaestro.length);
     }
-    // console.log(arrayToBeSent);
     res.json({
         arrayMaestro
     });
+}
+
+const getOneCountryById = async(req, res) => {
+    const {country_id} = req.params;
+    const id = country_id;
+    const isANumber = /^\d+$/.test(id);//Verificas si realmente lo que te enviaron por param fue un numero
+    if(isANumber) {
+        const countriesList = await pool.query('SELECT * FROM countries');
+        console.log(countriesList, id);
+        if(helper.findCountryById(countriesList, id)){
+            const rows = await pool.query('SELECT * FROM countries WHERE country_id = ?', [id]);
+            const currentCountry = rows[0];
+            console.log(currentCountry.country_name);
+            res.status(200).json(
+                currentCountry
+            )
+        }else{
+            res.status(400).json({
+                message: 'The country you want to modify is not in List'
+            })
+        }
+    }else{
+        res.status(400).json({
+            message: 'Send a number as param'
+        })
+    }
+}
+
+const getOneCityById = async(req, res) => {
+    const {city_id} = req.params;
+    const id = city_id;
+    const isANumber = /^\d+$/.test(id);//Verificas si realmente lo que te enviaron por param fue un numero
+    if(isANumber) {
+        const citiesList = await pool.query('SELECT * FROM cities');
+        console.log(citiesList, id);
+        if(helper.findCityById(citiesList, id)){
+            const rows = await pool.query('SELECT * FROM cities WHERE city_id = ?', [id]);
+            const currentCity = rows[0];
+            console.log(currentCity.city_name);
+            res.status(200).json(
+                currentCity
+            )
+        }else{
+            res.status(400).json({
+                message: 'The country you want to modify is not in List'
+            })
+        }
+    }else{
+        res.status(400).json({
+            message: 'Send a number as param'
+        })
+    }
+}
+
+const modifyRegion = async (req, res) => {
+    const{region_id} = req.params;
+    const id = region_id;
+    const isANumber = /^\d+$/.test(id);//Verificas si realmente lo que te enviaron por param fue un numero
+    if(isANumber) {
+        const regionList = await pool.query('SELECT * FROM regions');
+        console.log(regionList, id);
+        if(helper.findRegionById(regionList, id)){
+            console.log('the region you wanna update is in list');
+            const{region_name} = req.body;
+            const rows = await pool.query('SELECT * FROM regions WHERE region_id = ?', [id]);
+            const currentRegion = rows[0];
+            const modifiedRegion = {
+                ...currentRegion,
+                region_name
+            }
+            await pool.query('UPDATE regions set ? WHERE region_id = ?', [modifiedRegion, id])
+            res.status(200).json({
+                message: 'You have modified a region successfully'
+            })
+        }else{
+            res.status(400).json({
+                message: 'The region you want to modify is not in List'
+            })
+        }
+    }else{
+        res.status(400).json({
+            message: 'Send a number as param'
+        })
+    }
+}
+
+const getOneRegionById = async (req, res) => {
+    const {region_id} = req.params;
+    const id = region_id;
+    const isANumber = /^\d+$/.test(id);//Verificas si realmente lo que te enviaron por param fue un numero
+    if(isANumber) {
+        const regionsList = await pool.query('SELECT * FROM regions');
+        console.log(regionsList, id);
+        if(helper.findRegionById(regionsList, id)){
+            const rows = await pool.query('SELECT * FROM regions WHERE region_id = ?', [id]);
+            const currentRegion = rows[0];
+            console.log(currentRegion.region_name);
+            res.status(200).json(
+                currentRegion
+            )
+        }else{
+            res.status(400).json({
+                message: 'The region you want to access is not in List'
+            })
+        }
+    }else{
+        res.status(400).json({
+            message: 'Send a number as param'
+        })
+    }
 }
 
 module.exports = {
@@ -373,5 +460,9 @@ module.exports = {
     getAllRegions,
     getCountriesByRegion,
     getCitiesByCountry,
-    getAllInformation
+    getAllInformation,
+    getOneCountryById,
+    getOneCityById,
+    modifyRegion,
+    getOneRegionById
 }

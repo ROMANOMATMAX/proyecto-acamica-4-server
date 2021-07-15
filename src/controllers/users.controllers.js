@@ -60,7 +60,7 @@ const checkUserProvided = async (req, res) => {
 /******Funcion para añadir un nuevo user a la DB y otorgarle su token*****/
 const addNewUser = async (req, res) => {
 
-    const {fullname, email, password} = req.body; //Destructuring a los datos enviados en el body del request
+    const {fullname, email, password, role} = req.body; //Destructuring a los datos enviados en el body del request
 
     //Antes de añadir un nuevo usuario verifico que no este ya registrado en la base de datos 
 
@@ -79,9 +79,10 @@ const addNewUser = async (req, res) => {
             fullname,
             email, 
             password,
+            role,
         }
 
-        newUser.role = "BASIC";//Cualquier persona que se cree un usuario sera costumer y solo el admin admin podra hcaerlo tmb admin
+        // newUser.role = "BASIC";//Cualquier persona que se cree un usuario sera costumer y solo el admin admin podra hcaerlo tmb admin
         const salt = await bcrypt.genSalt(10);
         newUser.password = await bcrypt.hash(password, salt);//Clave del nuevo usuario encryptada
         console.log(newUser);
@@ -173,9 +174,20 @@ const getAllUsers = async (req, res) => {
             desactives.push(user)
         }
     });
+    const activesModified = actives.map( active => {
+        const usuarioModificado = {
+            key: active.id.toString(),
+            id: active.id,
+            fullname: active.fullname,
+            email: active.email,
+            role: active.role,
+            active: active.active
+        }
+        return usuarioModificado
+    })
+    console.log(activesModified);
     res.json({
-        actives: actives,
-        desactives: desactives
+        activesModified
     })
 }
 
@@ -187,7 +199,7 @@ const modifyOneUser = async (req, res) => {
         const allUsersList = await pool.query('SELECT id FROM users');
         if(helper.findCoincidenceInUserList(allUsersList, id)){
             console.log("The user sent in body is inside List");
-            const {fullname, email, password} = req.body;
+            const {fullname, email, password, role} = req.body;
             const rows = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
             const user = rows[0];
             const salt = await bcrypt.genSalt(10);
@@ -196,7 +208,8 @@ const modifyOneUser = async (req, res) => {
                 ...user,
                 fullname,
                 email,
-                password: encryptedPassword
+                password: encryptedPassword,
+                role
             }
             await pool.query('UPDATE users set ? WHERE id = ?', [modifiedUser, id]);
             res.status(200).json({
@@ -290,6 +303,19 @@ const activeOneUser = async (req, res) => {
     }
 }
 
+const authenticateUser = async (req, res) => {
+    console.log(req.app.get('userId'));
+    try {
+        const usuario = await pool.query('SELECT id, fullname, email, role, active FROM users WHERE id = ?', [req.app.get('userId')])
+        const oneUser = usuario[0];
+        console.log(oneUser);
+        res.json(oneUser)
+    }catch(error){
+        console.log(error);
+        res.status(500).json({msg: "hubo un error"})
+    }
+}
+
 module.exports = {
     checkUserProvided,
     addNewUser,
@@ -298,5 +324,6 @@ module.exports = {
     getAllUsers,
     modifyOneUser, 
     desactiveOneUser,
-    activeOneUser
+    activeOneUser,
+    authenticateUser
 }

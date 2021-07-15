@@ -1,7 +1,7 @@
 module.exports = {
     database : {
         host: 'localhost',
-        user: 'root',
+        user: 'romam132',
         password: 'Reptyl.13',
         database: 'data_warehouse'
     }
