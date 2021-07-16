@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {verifyTokenMiddleware, isAdmin} = require('../middlewares/authentication');
-const {addOneRegion, addOneCountry, addOneCity, modifyCountry, desactiveCountry, modifyCity, desactiveCity, activeCountry, activeCity, getAllRegions, getCountriesByRegion, getCitiesByCountry, getAllInformation, getOneCountryById, getOneCityById, modifyRegion, getOneRegionById} = require('../controllers/regions.controllers');
+const {addOneRegion, addOneCountry, addOneCity, modifyCountry, desactiveCountry, modifyCity, desactiveCity, activeCountry, activeCity, getAllRegions, getCountriesByRegion, getCitiesByCountry, getAllInformation, getOneCountryById, getOneCityById, modifyRegion, getOneRegionById, desactiveRegion, activeRegion} = require('../controllers/regions.controllers');
 
 //Endpoints
 router.post('/addRegion', [verifyTokenMiddleware], addOneRegion);
@@ -12,8 +12,10 @@ router.put('/modifyCity/:city_id', [verifyTokenMiddleware], modifyCity)
 router.put('/modifyRegion/:region_id', [verifyTokenMiddleware], modifyRegion)
 router.delete('/removeCountry/:country_id', [verifyTokenMiddleware], desactiveCountry)
 router.delete('/removeCity/:city_id', [verifyTokenMiddleware], desactiveCity)
+router.delete('/removeRegion/:region_id', [verifyTokenMiddleware], desactiveRegion)
 router.put('/activeCountry/:country_id', [verifyTokenMiddleware], activeCountry)
 router.put('/activeCity/:city_id', [verifyTokenMiddleware], activeCity)
+router.put('/activeRegion/:region_id', [verifyTokenMiddleware], activeRegion)
 router.get('/allRegions', [verifyTokenMiddleware], getAllRegions)
 router.get('/countriesByRegion/:region_id', [verifyTokenMiddleware], getCountriesByRegion)
 router.get('/citiesByCountry/:country_id', [verifyTokenMiddleware], getCitiesByCountry)
